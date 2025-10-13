@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C/F Temperature Converter</title>
+<!-- Load Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Custom styles for a modern look */
+@import
+url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&displ
+ay=swap');
+body {
+font-family: 'Inter', sans-serif;
+background-color: #f3f4f6; /* Light gray background */
+}
+.input-group input {
+transition: all 0.2s ease-in-out;
+box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0,
+0, 0, 0.06);
+}
+.input-group input:focus {
+outline: none;
+border-color: #3b82f6; /* Blue border on focus */
+box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
+</style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+<div class="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl border
+border-gray-100">
+<!-- Header -->
+<header class="text-center mb-8">
+<h1 class="text-3xl font-extrabold text-gray-800">
+Temperature Converter
+</h1>
+<p class="text-gray-500 mt-2 text-sm">
+Enter a value in either field for instant conversion.
+</p>
+</header>
+<!-- Conversion Form -->
+<div class="space-y-6">
+<!-- Celsius Input -->
+<div class="input-group">
+<label for="celsius" class="block text-sm font-medium
+text-gray-700 mb-2">
+Celsius (°C)
+</label>
+<div class="relative rounded-lg shadow-sm">
+<input
+type="number"
+id="celsius"
+placeholder="0"
+class="w-full py-3 pl-4 pr-16 border
+border-gray-300 rounded-lg text-lg text-gray-900 focus:ring-blue-500
+focus:border-blue-500"
+onkeyup="convert('celsius')"
+onchange="convert('celsius')"
+onfocus="this.select()"
+/>
+<div class="absolute inset-y-0 right-0 flex
+items-center pr-3 pointer-events-none">
+<span class="text-gray-500 sm:text-lg">
+°C
+</span>
+</div>
+</div>
+</div>
+<!-- Separator -->
+<div class="flex items-center justify-center">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6
+text-blue-500 transform rotate-90" fill="none" viewBox="0 0 24 24"
+stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round"
+stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+</svg>
+</div>
+<!-- Fahrenheit Input -->
+<div class="input-group">
+<label for="fahrenheit" class="block text-sm font-medium
+text-gray-700 mb-2">
+Fahrenheit (°F)
+</label>
+<div class="relative rounded-lg shadow-sm">
+<input
+type="number"
+id="fahrenheit"
+placeholder="32"
+class="w-full py-3 pl-4 pr-16 border
+border-gray-300 rounded-lg text-lg text-gray-900 focus:ring-blue-500
+focus:border-blue-500"
+onkeyup="convert('fahrenheit')"
+onchange="convert('fahrenheit')"
+onfocus="this.select()"
+/>
+<div class="absolute inset-y-0 right-0 flex
+items-center pr-3 pointer-events-none">
+<span class="text-gray-500 sm:text-lg">
+°F
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Conversion Formula Hint -->
+<footer class="mt-8 pt-6 border-t border-gray-200">
+<p class="text-sm text-gray-500 italic text-center">
+Celsius to Fahrenheit formula: $F = C \times 9/5 + 32$
+</p>
+</footer>
+</div>
+<script>
+// Get input elements
+const celsiusInput = document.getElementById('celsius');
+const fahrenheitInput = document.getElementById('fahrenheit');
+/**
+* Converts temperature between Celsius and Fahrenheit.
+* @param {string} source - The unit the user is typing into
+('celsius' or 'fahrenheit').
+*/
+function convert(source) {
+let value;
+let result;
+try {
+if (source === 'celsius') {
+value = parseFloat(celsiusInput.value);
+if (isNaN(value)) {
+fahrenheitInput.value = ''; // Clear output if
+input is not a number
+return;
+}
+// Formula: F = C * 9/5 + 32
+result = (value * 9/5) + 32;
+fahrenheitInput.value = result.toFixed(1);
+} else if (source === 'fahrenheit') {
+value = parseFloat(fahrenheitInput.value);
+if (isNaN(value)) {
+celsiusInput.value = ''; // Clear output if input
+is not a number
+return;
+}
+// Formula: C = (F - 32) * 5/9
+result = (value - 32) * 5/9;
+celsiusInput.value = result.toFixed(1);
+}
+} catch (error) {
+// Log errors to console if anything goes wrong during
+conversion
+console.error("Conversion error:", error);
+}
+}
+</script>
+</body>
+</html>

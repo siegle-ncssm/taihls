@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Chicken Finder</title>
+<style>
+body {
+font-family: Arial, sans-serif;
+background-color: #f4f4f9;
+color: #333;
+text-align: center;
+padding: 20px;
+}
+.container {
+background: #fff;
+padding: 30px;
+border-radius: 8px;
+box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+max-width: 600px;
+margin: 0 auto;
+}
+#photo-input {
+margin: 20px 0;
+padding: 10px;
+}
+#image-display {
+display: flex;
+justify-content: space-around;
+margin-top: 20px;
+gap: 15px;
+}
+.img-box {
+flex: 1;
+}
+.img-box img {
+max-width: 100%;
+height: auto;
+border: 1px solid #ddd;
+display: none; /* Hidden until an image is uploaded */
+}
+/* --- THE SIMULATED SILHOUETTE EFFECT --- */
+.silhouette {
+/* Turns the image into a black shape against a lighter background */
+filter: brightness(0) contrast(100);
+}
+#result-message {
+margin-top: 20px;
+padding: 10px;
+font-size: 1.1em;
+font-weight: bold;
+color: green;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🐣 Simple Chicken Identifier 🥚</h1>
+<p>Upload a photo to see a simulated chicken detection and silhouette.</p>
+<input type="file" id="photo-input" accept="image/*">
+<div id="image-display">
+<div class="img-box">
+<h3>Original</h3>
+<img id="original-image" alt="Original Photo">
+</div>
+<div class="img-box">
+<h3>Silhouette</h3>
+<img id="silhouette-image" alt="Simulated Silhouette">
+</div>
+</div>
+<div id="result-message"></div>
+</div>
+<script>
+document.getElementById('photo-input').addEventListener('change', function(event) {
+const file = event.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(e) {
+const imageUrl = e.target.result;
+// Display the Original Image
+const originalImg = document.getElementById('original-image');
+originalImg.src = imageUrl;
+originalImg.style.display = 'block';
+// Display the Simulated Silhouette (just the same image with a filter)
+const silhouetteImg = document.getElementById('silhouette-image');
+silhouetteImg.src = imageUrl;
+silhouetteImg.style.display = 'block';
+silhouetteImg.classList.add('silhouette'); // Apply the CSS filter
+// Display the success message
+document.getElementById('result-message').textContent =
+"✅ CHICKEN FOUND! (Simulated result)";
+}
+reader.readAsDataURL(file);
+});
+</script>
+</body>
+</html>

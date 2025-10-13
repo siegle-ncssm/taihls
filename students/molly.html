@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Wardrobe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        /* Style for number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-400 to-indigo-600 min-h-screen flex items-center justify-center p-4 text-white">
+
+    <div id="app-container" class="w-full max-w-md mx-auto">
+
+        <!-- Main Card -->
+        <div class="card p-6 md:p-8 text-center shadow-2xl space-y-6">
+            
+            <!-- Header -->
+            <div>
+                <h1 class="text-3xl font-bold">Weather Wardrobe</h1>
+                <p class="text-indigo-200 text-lg">Get clothing advice for any weather</p>
+            </div>
+
+            <!-- User Input Form -->
+            <form id="suggestion-form" class="space-y-4 text-left">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="w-full sm:w-1/2">
+                        <label for="temp-input" class="block text-sm font-medium mb-1 text-indigo-100">Temperature (°F)</label>
+                        <input id="temp-input" type="number" placeholder="e.g., 72" class="w-full px-4 py-3 rounded-lg bg-white/80 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition duration-300">
+                    </div>
+                    <div class="w-full sm:w-1/2">
+                        <label for="condition-input" class="block text-sm font-medium mb-1 text-indigo-100">Condition</label>
+                        <select id="condition-input" class="w-full px-4 py-3 rounded-lg bg-white/80 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition duration-300">
+                            <option>Sunny</option>
+                            <option>Partly Cloudy</option>
+                            <option>Cloudy</option>
+                            <option>Rainy</option>
+                            <option>Snowy</option>
+                            <option>Windy</option>
+                        </select>
+                    </div>
+                </div>
+                 <p id="error-message" class="text-red-300 text-sm min-h-[20px] text-center"></p>
+                <button type="submit" class="w-full bg-white/30 hover:bg-white/40 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                    Get Suggestion
+                </button>
+            </form>
+
+            <!-- Suggestion Display (hidden initially) -->
+            <div id="suggestion-container" class="hidden space-y-4 pt-4">
+                <hr class="border-white/20">
+                <h2 class="text-2xl font-semibold">What to Wear</h2>
+                <div class="bg-black/10 p-4 rounded-lg">
+                    <p id="suggestion" class="text-center text-lg"></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const suggestionForm = document.getElementById('suggestion-form');
+        const tempInput = document.getElementById('temp-input');
+        const conditionInput = document.getElementById('condition-input');
+        const errorMessage = document.getElementById('error-message');
+        const suggestionContainer = document.getElementById('suggestion-container');
+        const suggestionEl = document.getElementById('suggestion');
+        
+        // --- Logic Functions ---
+        function getClothingSuggestion(temp, condition) {
+            const lowerCaseCondition = condition.toLowerCase();
+            if (lowerCaseCondition.includes('rain')) {
+                return "It's rainy. A waterproof jacket or raincoat is a must. Wear waterproof shoes if you have them.";
+            }
+            if (lowerCaseCondition.includes('snow')) {
+                return "Snow is expected! Bundle up with a heavy coat, hat, gloves, and a scarf. Waterproof boots are essential.";
+            }
+            if (temp >= 80) {
+                return "It's hot out! A short-sleeve shirt and shorts are perfect for today. Don't forget sunscreen!";
+            } else if (temp >= 65) {
+                return "Great weather! A t-shirt and jeans or long pants will be comfortable.";
+            } else if (temp >= 50) {
+                return "It's a bit cool. A long-sleeve shirt or a light sweater is a good choice. You might want a light jacket.";
+            } else if (temp >= 35) {
+                return "It's chilly! Layer up with a sweater and a jacket. Long pants are a must.";
+            } else {
+                return "It's very cold! Wear a heavy coat, a warm sweater, and consider thermal layers. A hat and gloves are highly recommended.";
+            }
+        }
+
+        // Event Listeners
+        suggestionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            errorMessage.textContent = '';
+            
+            const temp = tempInput.value;
+            const condition = conditionInput.value;
+
+            if (temp === '') {
+                errorMessage.textContent = 'Please enter a temperature.';
+                suggestionContainer.classList.add('hidden');
+                return;
+            }
+
+            const numericTemp = parseInt(temp, 10);
+            
+            const suggestionText = getClothingSuggestion(numericTemp, condition);
+            suggestionEl.textContent = suggestionText;
+            suggestionContainer.classList.remove('hidden');
+        });
+
+    </script>
+</body>
+</html>
+

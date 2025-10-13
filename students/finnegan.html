@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Text Generation Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #output-text .token {
+            transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin: 0 1px;
+        }
+        #output-text .token.highlight {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl mx-auto">
+        <!-- Main Application Card -->
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900">LLM Text Generation Simulator</h1>
+                <p class="text-gray-600 mt-2">See a simplified step-by-step process of how AI generates text.</p>
+            </div>
+
+            <!-- Input Section -->
+            <div>
+                <label for="prompt" class="block text-sm font-medium text-gray-700 mb-2">Enter a starting prompt:</label>
+                <textarea id="prompt" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" placeholder="e.g., The quick brown fox...">The quick brown fox</textarea>
+                <div class="flex flex-col sm:flex-row items-center justify-between mt-4">
+                     <button id="generate-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm">
+                        Generate
+                    </button>
+                    <div class="flex items-center mt-3 sm:mt-0">
+                        <label for="speed" class="text-sm font-medium text-gray-700 mr-2">Speed:</label>
+                        <input type="range" id="speed" min="50" max="1000" value="300" step="50" class="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Section -->
+            <div class="mt-8">
+                <h2 class="text-lg font-semibold text-gray-800">Generated Text:</h2>
+                <div id="output-container" class="mt-2 p-4 border border-gray-200 bg-gray-50 rounded-lg min-h-[120px]">
+                    <p id="output-text" class="text-gray-900 leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation Card -->
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 mt-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">How It Works (A Simple Analogy)</h2>
+            <div class="space-y-4 text-gray-700">
+                <p>A real Large Language Model (LLM) is incredibly complex, but this simulation uses a simple rule-based approach to show the core idea: <strong class="text-gray-900">predicting the next word.</strong></p>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li><strong>Input as Tokens:</strong> Your prompt is broken down into words, which we can think of as "tokens". The model looks at the last token to decide what to write next.</li>
+                    <li><strong>Finding a Probable Next Word:</strong> Based on the current word, the model looks up a list of possible words that could follow. In this simple demo, it just picks one randomly from a pre-defined list. A real LLM calculates probabilities for thousands of possible next words based on patterns it learned from massive amounts of text data.</li>
+                    <li><strong>Appending and Repeating:</strong> The chosen word is added to the sequence. It then becomes the new "current word", and the process repeats, generating text one token at a time.</li>
+                </ol>
+                <p>This step-by-step generation is why you sometimes see models typing out their answers, as they are actively "thinking" of the next best word to add to the sentence.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const generateBtn = document.getElementById('generate-btn');
+            const promptTextarea = document.getElementById('prompt');
+            const outputTextElement = document.getElementById('output-text');
+            const speedSlider = document.getElementById('speed');
+
+            let isGenerating = false;
+
+            // This is a very simplified, rule-based "model".
+            // A real LLM uses complex probability distributions learned from data.
+            const model = {
+                'the': ['quick', 'lazy', 'dog', 'cat', 'fox', 'world'],
+                'quick': ['brown', 'fox', 'jumps'],
+                'brown': ['fox', 'dog', 'bear'],
+                'lazy': ['dog', 'cat', 'fox'],
+                'dog': ['jumps', 'barks', 'sleeps', 'over'],
+                'cat': ['sits', 'sleeps', 'on', 'chases'],
+                'fox': ['jumps', 'runs', 'over'],
+                'jumps': ['over', 'a', 'the'],
+                'over': ['the', 'a', 'lazy'],
+                'sleeps': ['on', 'a', 'the'],
+                'sits': ['on', 'a', 'the'],
+                'on': ['the', 'a', 'mat'],
+                'a': ['log', 'mat', 'stump'],
+                'world': ['is', 'spins', 'turns'],
+                'is': ['a', 'beautiful', 'vast'],
+                'barks': ['at', 'the'],
+                'at': ['the', 'a'],
+                'runs': ['to', 'the'],
+                'chases': ['a', 'the'],
+                'to': ['the', 'a'],
+                'beautiful': ['place', 'world'],
+                'vast': ['world', 'place'],
+                // Default case if a word isn't found
+                '__default__': ['the', 'a', 'is', 'on', 'with']
+            };
+
+            function getNextWord(word) {
+                const lowerWord = word.toLowerCase().replace(/[^a-z]/g, ''); // Clean the word
+                const nextWords = model[lowerWord] || model['__default__'];
+                return nextWords[Math.floor(Math.random() * nextWords.length)];
+            }
+
+            function generateText() {
+                if (isGenerating) return;
+                isGenerating = true;
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating...';
+                generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+                const initialPrompt = promptTextarea.value.trim();
+                const words = initialPrompt.split(/\s+/);
+                
+                outputTextElement.innerHTML = ''; // Clear previous output
+                words.forEach(word => {
+                    const span = document.createElement('span');
+                    span.textContent = word + ' ';
+                    span.className = 'token';
+                    outputTextElement.appendChild(span);
+                });
+
+                let currentWord = words[words.length - 1] || 'the';
+                let generatedCount = 0;
+                const maxWords = 30;
+
+                const intervalId = setInterval(() => {
+                    if (generatedCount >= maxWords) {
+                        clearInterval(intervalId);
+                        isGenerating = false;
+                        generateBtn.disabled = false;
+                        generateBtn.textContent = 'Generate';
+                        generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        // Remove highlight from the last word
+                        const lastToken = outputTextElement.querySelector('.highlight');
+                        if(lastToken) lastToken.classList.remove('highlight');
+                        return;
+                    }
+
+                    const nextWord = getNextWord(currentWord);
+
+                    // Remove highlight from previous word
+                    const oldHighlight = outputTextElement.querySelector('.highlight');
+                    if (oldHighlight) {
+                        oldHighlight.classList.remove('highlight');
+                    }
+
+                    const newSpan = document.createElement('span');
+                    newSpan.textContent = nextWord + ' ';
+                    newSpan.className = 'token highlight';
+                    outputTextElement.appendChild(newSpan);
+
+                    currentWord = nextWord;
+                    generatedCount++;
+
+                }, 1050 - speedSlider.value); // Invert slider value for intuitive control (faster is right)
+            }
+
+            generateBtn.addEventListener('click', generateText);
+        });
+    </script>
+</body>
+</html>

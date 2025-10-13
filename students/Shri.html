@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odds & Roll Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to use the Inter font family
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#4f46e5', // Indigo-600
+                        'secondary': '#10b981', // Emerald-500
+                        'dark-bg': '#1f2937', // Gray-800
+                        'card-bg': '#374151', // Gray-700
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Gray-900 */
+        }
+        /* Custom styling for the roll result animation */
+        @keyframes bounce-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        .animate-bounce-in {
+            animation: bounce-in 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="min-h-screen p-4 sm:p-8 flex items-start justify-center">
+        <div class="w-full max-w-4xl space-y-8">
+            <header class="text-center">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-white mb-2">
+                    <span class="text-secondary">P-Calc</span> & Weighted Roller
+                </h1>
+                <p class="text-gray-400 text-lg">Define the odds, calculate the chance, and simulate the outcome.</p>
+            </header>
+
+            <!-- Main Grid Container -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- 1. Odds to Probability Calculator -->
+                <div class="bg-card-bg p-6 rounded-xl shadow-2xl border border-gray-600">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 7.37 3.66L12 12V2z"/></svg>
+                        Odds Converter
+                    </h2>
+                    <p class="text-gray-400 mb-4">Calculate the probability based on $X$ to $Y$ odds (e.g., $4:1$).</p>
+
+                    <div class="space-y-4">
+                        <!-- Odds Input -->
+                        <div class="flex flex-col sm:flex-row gap-4 items-end">
+                            <div class="flex-grow">
+                                <label for="oddsInput" class="block text-sm font-medium text-gray-300">Ratio Value ($X$)</label>
+                                <input type="number" id="oddsInput" value="4" min="0.01" step="0.01" class="mt-1 block w-full rounded-lg border-gray-600 bg-gray-700 text-white p-3 focus:ring-primary focus:border-primary transition duration-150" oninput="calculateOddsToProbability()">
+                            </div>
+                            <div class="flex-shrink-0 text-3xl font-bold text-gray-400 self-center">: 1</div>
+                            
+                            <!-- Odds Type Selector -->
+                            <div class="flex-grow">
+                                <label for="oddsType" class="block text-sm font-medium text-gray-300">Odds Type</label>
+                                <select id="oddsType" class="mt-1 block w-full rounded-lg border-gray-600 bg-gray-700 text-white p-3 focus:ring-primary focus:border-primary transition duration-150" onchange="calculateOddsToProbability()">
+                                    <option value="for">Odds For ($X:1$ chance to succeed)</option>
+                                    <option value="against" selected>Odds Against ($1:X$ chance to succeed)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Result Display -->
+                        <div id="oddsResult" class="p-4 bg-gray-700 rounded-lg border border-primary/50">
+                            <p class="text-sm font-medium text-gray-300">Probability of Success:</p>
+                            <p id="probabilityDisplay" class="text-4xl font-extrabold text-secondary mt-1">--</p>
+                            <p id="formulaDisplay" class="text-xs text-gray-500 mt-2">Formula: $P = 1 / (X + 1)$</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Weighted Roll Simulator -->
+                <div class="bg-card-bg p-6 rounded-xl shadow-2xl border border-gray-600">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z"/><path d="M19 20c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2z"/><path d="M12 2v20"/><path d="M2 12h20"/><path d="M5 12l7-7 7 7-7 7z"/></svg>
+                        Weighted Roll
+                    </h2>
+                    <p class="text-gray-400 mb-4">Define outcomes and their weights (higher weight = higher chance).</p>
+
+                    <!-- Outcomes List Container -->
+                    <div id="outcomesContainer" class="space-y-3 mb-6">
+                        <!-- Initial outcome rows are generated here -->
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 mb-6">
+                        <button onclick="addOutcome('New Outcome', 10)" class="flex-grow text-white bg-primary hover:bg-primary/90 rounded-lg p-3 font-semibold shadow-lg transition duration-150 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-primary/50">
+                            + Add Outcome
+                        </button>
+                        <button onclick="simulateRoll()" class="flex-grow text-white bg-secondary hover:bg-secondary/90 rounded-lg p-3 font-extrabold text-lg shadow-lg transition duration-150 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-secondary/50">
+                            ROLL!
+                        </button>
+                    </div>
+
+                    <!-- Results and Stats -->
+                    <div class="space-y-4">
+                        <!-- Roll Result -->
+                        <div class="p-5 text-center bg-gray-700 rounded-lg border border-secondary/50">
+                            <p class="text-sm font-medium text-gray-300">Last Roll Result:</p>
+                            <p id="rollResultDisplay" class="text-4xl font-extrabold text-secondary mt-1">Roll to find out!</p>
+                        </div>
+
+                        <!-- Statistics/Percentages -->
+                        <div class="p-4 bg-gray-700 rounded-lg">
+                            <p class="text-lg font-bold text-white mb-2">Outcome Percentages (Total Weight: <span id="totalWeightDisplay">0</span>)</p>
+                            <div id="percentagesDisplay" class="space-y-1 text-sm text-gray-300">
+                                <p>Enter weights and hit 'Roll' to see probabilities.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize with two default outcomes
+            addOutcome('Success', 5);
+            addOutcome('Failure', 10);
+            calculateOddsToProbability();
+            updatePercentages();
+        });
+
+        // --- SECTION 1: Odds to Probability Converter Logic ---
+
+        function calculateOddsToProbability() {
+            const oddsInput = parseFloat(document.getElementById('oddsInput').value);
+            const oddsType = document.getElementById('oddsType').value;
+            const probabilityDisplay = document.getElementById('probabilityDisplay');
+            const formulaDisplay = document.getElementById('formulaDisplay');
+
+            if (isNaN(oddsInput) || oddsInput <= 0) {
+                probabilityDisplay.textContent = 'Invalid Input';
+                formulaDisplay.textContent = 'Please enter a positive number.';
+                return;
+            }
+
+            let probability;
+            let formulaText;
+
+            // Odds Against (1:X) -> P = 1 / (X + 1)
+            if (oddsType === 'against') {
+                probability = 1 / (oddsInput + 1);
+                formulaText = `Odds Against 1:${oddsInput}. Formula: $P = 1 / (${oddsInput} + 1)$`;
+            }
+            // Odds For (X:1) -> P = X / (X + 1)
+            else {
+                probability = oddsInput / (oddsInput + 1);
+                formulaText = `Odds For ${oddsInput}:1. Formula: $P = ${oddsInput} / (${oddsInput} + 1)$`;
+            }
+
+            const percentage = (probability * 100).toFixed(2);
+            
+            probabilityDisplay.textContent = `${percentage}%`;
+            formulaDisplay.textContent = formulaText;
+        }
+
+        // --- SECTION 2: Weighted Roll Simulator Logic ---
+
+        let outcomeIdCounter = 0;
+
+        function addOutcome(name = 'Outcome', weight = 1) {
+            const container = document.getElementById('outcomesContainer');
+            const id = `outcome-${outcomeIdCounter++}`;
+
+            const newRow = document.createElement('div');
+            newRow.id = id;
+            newRow.className = 'flex gap-3 items-center p-3 bg-gray-800 rounded-lg shadow-inner';
+
+            newRow.innerHTML = `
+                <input type="text" value="${name}" placeholder="Outcome Name"
+                       class="outcome-name flex-grow rounded-lg border-gray-600 bg-gray-700 text-white p-2 text-sm focus:ring-secondary focus:border-secondary transition duration-150"
+                       oninput="updatePercentages()">
+                
+                <input type="number" value="${weight}" min="1" step="1" placeholder="Weight"
+                       class="outcome-weight w-20 rounded-lg border-gray-600 bg-gray-700 text-white p-2 text-sm text-center focus:ring-secondary focus:border-secondary transition duration-150"
+                       oninput="updatePercentages()">
+
+                <button onclick="removeOutcome('${id}')" title="Remove Outcome"
+                        class="text-gray-400 hover:text-red-500 transition duration-150 p-1 rounded-full hover:bg-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                </button>
+            `;
+            container.appendChild(newRow);
+            updatePercentages();
+        }
+
+        function removeOutcome(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+                updatePercentages();
+            }
+        }
+
+        function getOutcomes() {
+            const names = Array.from(document.querySelectorAll('.outcome-name')).map(input => input.value || 'N/A');
+            const weights = Array.from(document.querySelectorAll('.outcome-weight')).map(input => parseInt(input.value) || 0);
+            
+            return names.map((name, index) => ({
+                name: name,
+                weight: Math.max(0, weights[index]) // Ensure weight is non-negative
+            }));
+        }
+
+        function updatePercentages() {
+            const outcomes = getOutcomes();
+            const totalWeight = outcomes.reduce((sum, item) => sum + item.weight, 0);
+            
+            const displayContainer = document.getElementById('percentagesDisplay');
+            const totalWeightDisplay = document.getElementById('totalWeightDisplay');
+            
+            totalWeightDisplay.textContent = totalWeight;
+            displayContainer.innerHTML = '';
+
+            if (totalWeight === 0) {
+                displayContainer.innerHTML = '<p class="text-red-400">Total weight is zero. Add or increase weights.</p>';
+                return;
+            }
+
+            outcomes.forEach(item => {
+                const percentage = totalWeight > 0 ? ((item.weight / totalWeight) * 100).toFixed(2) : 0;
+                const p = document.createElement('p');
+                p.innerHTML = `<span class="font-semibold text-secondary">${percentage}%</span> chance for: <span class="text-white">${item.name}</span> (Weight: ${item.weight})`;
+                displayContainer.appendChild(p);
+            });
+        }
+
+        function simulateRoll() {
+            const outcomes = getOutcomes().filter(item => item.weight > 0);
+            const totalWeight = outcomes.reduce((sum, item) => sum + item.weight, 0);
+            const resultDisplay = document.getElementById('rollResultDisplay');
+
+            // 1. Check for valid setup
+            if (totalWeight === 0) {
+                resultDisplay.textContent = 'ERROR: No active outcomes.';
+                resultDisplay.className = 'text-3xl font-extrabold text-red-500 mt-1 animate-bounce-in';
+                return;
+            }
+
+            // 2. Generate the random number
+            // Use Math.random() for uniform distribution between 0 (inclusive) and 1 (exclusive)
+            let rollValue = Math.random() * totalWeight;
+            let finalOutcome = "Undefined";
+
+            // 3. Determine the result using the weights (cumulative distribution)
+            for (const item of outcomes) {
+                rollValue -= item.weight;
+                if (rollValue <= 0) {
+                    finalOutcome = item.name;
+                    break;
+                }
+            }
+
+            // 4. Display the result with animation
+            resultDisplay.textContent = finalOutcome;
+            // Clear previous animation classes and add the new one for bounce effect
+            resultDisplay.className = 'text-4xl font-extrabold text-secondary mt-1';
+            void resultDisplay.offsetWidth; // Trigger reflow to restart animation
+            resultDisplay.classList.add('animate-bounce-in');
+        }
+
+    </script>
+</body>
+</html>

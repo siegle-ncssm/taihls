@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protein Sequence Analyzer</title>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .matrix {
+            /* Custom style for the AA codes */
+            display: inline-block;
+            width: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
+        
+        <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 mb-6 text-center">Protein Sequence Analyzer</h1>
+        <p class="text-gray-600 mb-8 text-center">Enter a protein sequence (using single-letter codes) to analyze its composition and properties.</p>
+
+        <!-- Input Area -->
+        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-8">
+            <label for="sequenceInput" class="block text-lg font-semibold text-gray-800 mb-2">Protein Sequence:</label>
+            <textarea id="sequenceInput" rows="5" placeholder="Example: MVLSADK" 
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm">MALW MRLL PLLC GVFW GDPL AKGD AAGS GLPQ ALIL QQQL LLLG LLLV PGQS LEPL ALGE LVDG QVEL GGGG PGAG SLQP LALE GSLQ KRGI VEQC CTSI CSLY QLEN YCNC</textarea>
+            
+            <button onclick="analyzeSequence()" 
+                    class="mt-4 w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 transform hover:scale-[1.01]">
+                Analyze Sequence
+            </button>
+
+            <p id="errorMsg" class="mt-3 text-center text-red-600 font-semibold hidden"></p>
+        </div>
+
+        <!-- Results Area -->
+        <div id="resultsArea" class="hidden">
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">Analysis Results</h2>
+
+            <!-- Summary Statistics -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <!-- Length -->
+                <div class="bg-blue-100 p-4 rounded-lg text-center shadow">
+                    <p class="text-sm text-blue-700 font-semibold">Sequence Length</p>
+                    <p id="resultLength" class="text-3xl font-extrabold text-blue-900 mt-1">0</p>
+                </div>
+                <!-- Molecular Weight -->
+                <div class="bg-green-100 p-4 rounded-lg text-center shadow">
+                    <p class="text-sm text-green-700 font-semibold">Molecular Weight (Da)</p>
+                    <p id="resultMass" class="text-3xl font-extrabold text-green-900 mt-1">0.00</p>
+                </div>
+                <!-- Hydrophobicity -->
+                <div class="bg-yellow-100 p-4 rounded-lg text-center shadow">
+                    <p class="text-sm text-yellow-700 font-semibold">Avg. Hydrophobicity Index</p>
+                    <p id="resultHydrophobicity" class="text-3xl font-extrabold text-yellow-900 mt-1">0.000</p>
+                </div>
+            </div>
+
+            <p id="resultInterpretation" class="mb-6 text-sm italic text-gray-700 p-3 bg-gray-100 rounded-lg border-l-4 border-gray-400"></p>
+
+            <!-- Composition Table -->
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">Amino Acid Composition (%)</h3>
+            <div id="compositionList" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Composition items will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data copied from the Python file for analysis
+        const AMINO_ACID_PROPERTIES = {
+            'A': {'name': 'Alanine', 'mass': 89.09, 'hydrophobicity': 1.8},
+            'R': {'name': 'Arginine', 'mass': 174.20, 'hydrophobicity': -4.5},
+            'N': {'name': 'Asparagine', 'mass': 132.12, 'hydrophobicity': -3.5},
+            'D': {'name': 'Aspartic acid', 'mass': 133.10, 'hydrophobicity': -3.5},
+            'C': {'name': 'Cysteine', 'mass': 121.16, 'hydrophobicity': 2.5},
+            'Q': {'name': 'Glutamine', 'mass': 146.15, 'hydrophobicity': -3.5},
+            'E': {'name': 'Glutamic acid', 'mass': 147.13, 'hydrophobicity': -3.5},
+            'G': {'name': 'Glycine', 'mass': 75.07, 'hydrophobicity': -0.4},
+            'H': {'name': 'Histidine', 'mass': 155.16, 'hydrophobicity': -3.2},
+            'I': {'name': 'Isoleucine', 'mass': 131.18, 'hydrophobicity': 4.5},
+            'L': {'name': 'Leucine', 'mass': 131.18, 'hydrophobicity': 3.8},
+            'K': {'name': 'Lysine', 'mass': 146.19, 'hydrophobicity': -3.9},
+            'M': {'name': 'Methionine', 'mass': 149.21, 'hydrophobicity': 1.9},
+            'F': {'name': 'Phenylalanine', 'mass': 165.19, 'hydrophobicity': 2.8},
+            'P': {'name': 'Proline', 'mass': 115.13, 'hydrophobicity': -1.6},
+            'S': {'name': 'Serine', 'mass': 105.09, 'hydrophobicity': -0.8},
+            'T': {'name': 'Threonine', 'mass': 119.12, 'hydrophobicity': -0.7},
+            'W': {'name': 'Tryptophan', 'mass': 204.23, 'hydrophobicity': -0.9},
+            'Y': {'name': 'Tyrosine', 'mass': 181.19, 'hydrophobicity': -1.3},
+            'V': {'name': 'Valine', 'mass': 117.15, 'hydrophobicity': 4.2},
+        };
+
+        const WATER_LOSS_MASS = 18.015; // Mass of water lost per peptide bond
+
+        /**
+         * Cleans the sequence and performs the analysis, updating the UI.
+         */
+        function analyzeSequence() {
+            const sequenceInput = document.getElementById('sequenceInput').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const resultsArea = document.getElementById('resultsArea');
+            
+            // 1. Prepare and validate sequence
+            const sequence = sequenceInput.toUpperCase().replace(/[^A-Z]/g, ''); // Remove spaces/newlines and non-AA codes
+            
+            errorMsg.classList.add('hidden');
+            resultsArea.classList.add('hidden');
+
+            if (sequence.length === 0) {
+                errorMsg.textContent = 'Please enter a valid protein sequence.';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // 2. Core Analysis Logic
+            const totalLength = sequence.length;
+            let totalMass = 0;
+            let totalHydrophobicity = 0;
+            const counts = {};
+
+            for (const aa of sequence) {
+                if (AMINO_ACID_PROPERTIES[aa]) {
+                    counts[aa] = (counts[aa] || 0) + 1;
+                    totalMass += AMINO_ACID_PROPERTIES[aa].mass;
+                    totalHydrophobicity += AMINO_ACID_PROPERTIES[aa].hydrophobicity;
+                } else {
+                    // Alert user to non-standard AA codes, but continue with valid ones
+                    console.warn(`Skipping non-standard amino acid code: ${aa}`);
+                }
+            }
+
+            if (Object.keys(counts).length === 0) {
+                 errorMsg.textContent = 'The sequence only contained non-standard characters.';
+                 errorMsg.classList.remove('hidden');
+                 return;
+            }
+
+            // Calculate final properties
+            const waterLossMass = WATER_LOSS_MASS * (totalLength - 1);
+            const estimatedMolecularWeight = totalMass - waterLossMass;
+            const averageHydrophobicity = totalHydrophobicity / totalLength;
+
+            // Calculate composition
+            const composition = [];
+            for (const aa in counts) {
+                const percent = (counts[aa] / totalLength) * 100;
+                composition.push({
+                    aa: aa,
+                    name: AMINO_ACID_PROPERTIES[aa].name,
+                    percent: percent
+                });
+            }
+
+            // Sort composition by percentage (highest first)
+            composition.sort((a, b) => b.percent - a.percent);
+
+            // 3. Update the UI
+            document.getElementById('resultLength').textContent = totalLength.toLocaleString();
+            document.getElementById('resultMass').textContent = estimatedMolecularWeight.toFixed(2);
+            document.getElementById('resultHydrophobicity').textContent = averageHydrophobicity.toFixed(3);
+            
+            const interpretation = averageHydrophobicity > 0 ? 
+                `The average hydrophobicity index is positive (${averageHydrophobicity.toFixed(3)}), suggesting this protein segment is more likely to be found in a hydrophobic (water-repelling) environment, like a cell membrane.` :
+                `The average hydrophobicity index is negative (${averageHydrophobicity.toFixed(3)}), suggesting this protein segment is more likely to be found in a hydrophilic (water-attracting) environment, like cytoplasm.`;
+
+            document.getElementById('resultInterpretation').textContent = interpretation;
+
+            const compositionList = document.getElementById('compositionList');
+            compositionList.innerHTML = ''; // Clear old results
+
+            composition.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'p-3 bg-gray-50 border border-gray-200 rounded-lg';
+                div.innerHTML = `
+                    <p class="text-sm font-bold text-gray-900"><span class="matrix bg-gray-200 rounded px-1 py-0.5">${item.aa}</span> ${item.name}</p>
+                    <p class="text-xl font-semibold text-purple-700 mt-1">${item.percent.toFixed(2)}%</p>
+                `;
+                compositionList.appendChild(div);
+            });
+
+            resultsArea.classList.remove('hidden');
+        }
+
+        // Run analysis on load using the default example sequence
+        document.addEventListener('DOMContentLoaded', analyzeSequence);
+    </script>
+
+</body>
+</html>

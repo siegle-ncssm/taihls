@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector Calculator: 3D Operations</title>
+<!-- Load Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Configure Tailwind theme -->
+<script>
+tailwind.config = {
+theme: {
+extend: {
+colors: {
+'primary-blue': '#2563EB', // Blue-600
+'accent-cyan': '#06B6D4', // Cyan-500
+'background-light': '#F8FAFC', // Slate-50
+},
+fontFamily: {
+sans: ['Inter', 'sans-serif'],
+mono: ['SFMono-Regular', 'Menlo', 'monospace'],
+},
+}
+}
+}
+</script>
+<style>
+/* General styling for the body */
+body {
+background-color: #F8FAFC;
+}
+/* Custom styling for the input fields for a cleaner look */
+.vector-input-group input {
+@apply w-full px-3 py-2 border border-gray-300 rounded-lg text-center
+focus:ring-primary-blue focus:border-primary-blue transition;
+}
+/* Style for the calculation buttons */
+.calc-button {
+@apply w-full py-3 rounded-xl shadow-lg font-semibold transition
+duration-300 transform hover:scale-[1.02] active:scale-[0.98];
+}
+</style>
+</head>
+<body class="font-sans text-gray-800 p-4 md:p-8">
+<div class="max-w-6xl mx-auto">
+<!-- Header -->
+<header class="text-center py-6 mb-10 bg-white rounded-2xl shadow-xl
+border-t-4 border-primary-blue">
+<h1 class="text-4xl font-bold text-primary-blue">Vector Calculator
+(3D)</h1>
+<p class="text-xl text-gray-500 mt-2">Explore common vector operations:
+$\mathbf{A}$, $\mathbf{B}$ and scalar $k$.</p>
+</header>
+<!-- Input Section -->
+<section class="mb-10 p-6 bg-white rounded-2xl shadow-xl">
+<h2 class="text-2xl font-semibold mb-6 border-b pb-2 text-accent-
+cyan">Input Vectors and Scalar</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 vector-input-group">
+<!-- Vector A Input -->
+<div>
+<!-- Updated label -->
+<label class="block text-lg font-medium mb-3 text-primary-
+blue">Vector A (x, y, z)</label>
+<div class="flex space-x-2">
+<!-- Updated placeholders -->
+<input type="number" id="Ax" value="3" placeholder="x">
+<input type="number" id="Ay" value="1" placeholder="y">
+<input type="number" id="Az" value="-2" placeholder="z">
+</div>
+</div>
+<!-- Vector B Input -->
+<div>
+<!-- Updated label for consistency -->
+<label class="block text-lg font-medium mb-3 text-primary-
+blue">Vector B (x, y, z)</label>
+<div class="flex space-x-2">
+<!-- Updated placeholders for consistency -->
+<input type="number" id="Bx" value="1" placeholder="x">
+<input type="number" id="By" value="4" placeholder="y">
+<input type="number" id="Bz" value="5" placeholder="z">
+</div>
+</div>
+<!-- Scalar k Input -->
+<div class="md:col-span-1 flex flex-col justify-end">
+<div>
+<label class="block text-lg font-medium mb-3 text-primary-
+blue">Scalar $k$</label>
+<input type="number" id="scalarK" value="2"
+placeholder="k">
+</div>
+</div>
+</div>
+<button onclick="calculateAll()" class="mt-8 w-full calc-button bg-
+primary-blue text-white hover:bg-primary-blue/90">
+Run All Calculations
+</button>
+</section>
+<!-- Output Section -->
+<section class="p-6 bg-white rounded-2xl shadow-xl">
+<h2 class="text-2xl font-semibold mb-6 border-b pb-2 text-accent-
+cyan">Calculation Results</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Result 1: Addition -->
+<div class="bg-blue-50 p-4 rounded-xl border-l-4 border-primary-
+blue shadow-sm">
+<p class="text-lg font-mono mb-2 text-primary-blue">Vector
+Addition</p>
+<p id="resultAdd" class="text-3xl font-bold text-primary-blue">
+<!-- Result -->
+</p>
+<p class="text-sm text-primary-blue/70 mt-1">Result is a vector
+(A + B).</p>
+</div>
+<!-- Result 2: Subtraction -->
+<div class="bg-blue-50 p-4 rounded-xl border-l-4 border-primary-
+blue shadow-sm">
+<p class="text-lg font-mono mb-2 text-primary-blue">Vector
+Subtraction</p>
+<p id="resultSubtract" class="text-3xl font-bold text-primary-
+blue">
+<!-- Result -->
+</p>
+<p class="text-sm text-primary-blue/70 mt-1">Result is a vector
+(A - B).</p>
+</div>
+<!-- Result 3: Dot Product -->
+<div class="bg-cyan-50 p-4 rounded-xl border-l-4 border-accent-cyan
+shadow-sm">
+<p class="text-lg font-mono mb-2 text-accent-cyan">Dot
+Product</p>
+<p id="resultDot" class="text-3xl font-bold text-accent-cyan">
+<!-- Result -->
+</p>
+<p class="text-sm text-accent-cyan/70 mt-1">Result is a scalar
+(A $\cdot$ B).</p>
+</div>
+<!-- Result 4: Scalar Multiplication -->
+<div class="bg-cyan-50 p-4 rounded-xl border-l-4 border-accent-cyan
+shadow-sm">
+<p class="text-lg font-mono mb-2 text-accent-cyan">Scalar
+Multiplication</p>
+<p id="resultScalar" class="text-3xl font-bold text-accent-
+cyan">
+<!-- Result -->
+</p>
+<p class="text-sm text-accent-cyan/70 mt-1">Result is a vector
+($k \cdot A$).</p>
+</div>
+</div>
+</section>
+</div> <!-- End of max-w-6xl container -->
+<script>
+// Helper function to safely parse input values
+function getVectorInput() {
+const A = {
+x: parseFloat(document.getElementById('Ax').value || 0),
+y: parseFloat(document.getElementById('Ay').value || 0),
+z: parseFloat(document.getElementById('Az').value || 0)
+};
+const B = {
+x: parseFloat(document.getElementById('Bx').value || 0),
+y: parseFloat(document.getElementById('By').value || 0),
+z: parseFloat(document.getElementById('Bz').value || 0)
+};
+const k = parseFloat(document.getElementById('scalarK').value || 1);
+// Check for valid numbers
+if (Object.values(A).some(isNaN) || Object.values(B).some(isNaN) ||
+isNaN(k)) {
+return { error: true };
+}
+return { A, B, k, error: false };
+}
+// Helper function to format a vector for display
+function formatVector(v) {
+return ` ${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)} `;⟨ ⟩
+}
+// --- Core Calculation Functions ---
+// Vector Addition: A + B
+function calculateAdd(A, B) {
+const sum = {
+x: A.x + B.x,
+y: A.y + B.y,
+z: A.z + B.z
+};
+document.getElementById('resultAdd').textContent = formatVector(sum);
+}
+// Vector Subtraction: A - B
+function calculateSubtract(A, B) {
+const diff = {
+x: A.x - B.x,
+y: A.y - B.y,
+z: A.z - B.z
+};
+document.getElementById('resultSubtract').textContent =
+formatVector(diff);
+}
+// Dot Product: A · B (Result is a scalar)
+function calculateDotProduct(A, B) {
+const dot = (A.x * B.x) + (A.y * B.y) + (A.z * B.z);
+document.getElementById('resultDot').textContent = dot.toFixed(2);
+}
+// Scalar Multiplication: k * A
+function calculateScalarMultiplication(A, k) {
+const scaled = {
+x: A.x * k,
+y: A.y * k,
+z: A.z * k
+};
+document.getElementById('resultScalar').textContent =
+formatVector(scaled);
+}
+// Main function to run all calculations
+function calculateAll() {
+const inputs = getVectorInput();
+if (inputs.error) {
+const errorMessage = 'Invalid Input (Must be numbers)';
+document.getElementById('resultAdd').textContent = errorMessage;
+document.getElementById('resultSubtract').textContent =
+errorMessage;
+document.getElementById('resultDot').textContent = errorMessage;
+document.getElementById('resultScalar').textContent = errorMessage;
+return;
+}
+const { A, B, k } = inputs;
+calculateAdd(A, B);
+calculateSubtract(A, B);
+calculateDotProduct(A, B);
+calculateScalarMultiplication(A, k);
+}
+// Initialize calculations on page load
+window.onload = function() {
+calculateAll();
+};
+</script>
+</body>
+</html>

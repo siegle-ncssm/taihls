@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Feline Encyclopedia</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use Inter font and custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-dark': '#1f2937', // Gray 800
+                        'secondary-light': '#f3f4f6', // Gray 100
+                        'accent-blue': '#3b82f6', // Blue 500
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Ensuring smooth transitions for tabs */
+        .tab-button {
+            transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+            transform: scale(1);
+        }
+        .tab-button:hover {
+            transform: scale(1.02);
+        }
+        /* Custom scrollbar for content area */
+        #content-area {
+            max-height: 70vh; /* Limit height for responsiveness */
+            overflow-y: auto;
+        }
+        /* Custom scrollbar styling */
+        #content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        #content-area::-webkit-scrollbar-thumb {
+            background-color: #9ca3af; /* Gray 400 */
+            border-radius: 10px;
+        }
+        #content-area::-webkit-scrollbar-track {
+            background: #e5e7eb; /* Gray 200 */
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-secondary-light font-sans min-h-screen p-4 md:p-8">
+
+    <div id="app" class="max-w-6xl mx-auto bg-white shadow-2xl rounded-3xl overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-primary-dark text-white p-6 rounded-t-3xl shadow-lg">
+            <h1 class="text-4xl font-extrabold tracking-tight">The Feline Encyclopedia 🐈</h1>
+            <p class="text-gray-300 mt-1">Explore the world of our mysterious, purring companions.</p>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="md:flex">
+
+            <!-- Navigation Tabs -->
+            <nav id="tabs" class="md:w-1/4 bg-gray-50 p-4 border-b md:border-b-0 md:border-r border-gray-200 space-y-2">
+                <!-- Buttons will be generated here by JS -->
+            </nav>
+
+            <!-- Content Area -->
+            <main id="content-area" class="md:w-3/4 p-6 md:p-10 transition-opacity duration-500">
+                <div class="flex items-center justify-center h-full">
+                    <p id="initial-message" class="text-xl text-gray-500 p-8">
+                        Select a topic from the left panel to begin your feline education!
+                    </p>
+                    <div id="content-display" class="hidden w-full">
+                        <!-- Dynamic content will be injected here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="bg-primary-dark text-gray-400 text-center p-4 text-sm rounded-b-3xl">
+            A Cat Learning App powered by Gemini.
+        </footer>
+    </div>
+
+    <script>
+        // --- Data Structure for Cat Information ---
+        const catData = {
+            Breeds: {
+                title: "Feline Royalty: Exploring Top Cat Breeds",
+                icon: "🐾",
+                type: "card-list",
+                content: [
+                    { name: "Maine Coon", description: "Known as the 'gentle giant,' this large, friendly cat is native to Maine and is one of the oldest natural breeds in North America. They are intelligent and playful.", imageUrl: "https://placehold.co/400x300/3b82f6/ffffff?text=Maine+Coon" },
+                    { name: "Siamese", description: "Distinguished by its striking blue almond-shaped eyes and color-pointed coat, the Siamese is a highly social and vocal cat, often described as 'dog-like' in personality.", imageUrl: "https://placehold.co/400x300/10b981/ffffff?text=Siamese" },
+                    { name: "Scottish Fold", description: "This breed is famous for its naturally folded ears, giving the head a 'pixie' or owl-like appearance. They are known for their quiet and affectionate demeanor.", imageUrl: "https://placehold.co/400x300/f59e0b/ffffff?text=Scottish+Fold" },
+                ]
+            },
+            History: {
+                title: "From Wild Hunter to House Pet: Cat History",
+                icon: "🏛️",
+                type: "text",
+                content: "Cats (Felis catus) were first domesticated in the Near East around 7,500 BC. They were revered in ancient Egypt, where they were associated with the goddess Bastet and protected vital grain stores from rodents. It was considered a capital crime to kill a cat in ancient Egypt, demonstrating their immense cultural importance. Their spread across the globe is closely linked to maritime trade, as they were excellent pest controllers on ships.",
+                imageUrl: "https://placehold.co/600x400/ef4444/ffffff?text=Ancient+Egypt+Cat"
+            },
+            Behavior: {
+                title: "Decoding the Purr: Understanding Cat Behavior",
+                icon: "🧠",
+                type: "text",
+                content: "Cat communication involves a variety of sounds (meows, purrs, hisses) and body language. A slow blink is perhaps the clearest sign of feline trust and affection, often referred to as a 'cat kiss.' The kneading motion, where a cat pushes in and out with its paws, is a relic of kittenhood used to stimulate milk flow, and is a sign of contentment and security. Tail height and movement are crucial indicators of mood.",
+                imageUrl: "https://placehold.co/600x400/8b5cf6/ffffff?text=Cat+Body+Language"
+            },
+            Facts: {
+                title: "Nine Lives, Nine Facts: Amazing Cat Trivia",
+                icon: "⭐",
+                type: "list",
+                content: [
+                    "A group of adult cats is called a clowder, while a group of kittens is called a kindle.",
+                    "Cats can make over 100 different vocal sounds, compared to dogs, which can only make about 10.",
+                    "The world's largest domestic cat breed is the Maine Coon, which can weigh up to 18 pounds.",
+                    "A cat’s sense of smell is fourteen times stronger than a human’s.",
+                    "Cats spend approximately 70% of their lives sleeping.",
+                    "If your cat’s tail is twitching or quivering, it’s a sign of intense excitement or happiness."
+                ]
+            }
+        };
+
+        let activeTopic = null;
+
+        /**
+         * Generates the navigation buttons from the catData object.
+         */
+        function renderTabs() {
+            const tabsContainer = document.getElementById('tabs');
+            tabsContainer.innerHTML = ''; // Clear existing tabs
+
+            Object.keys(catData).forEach(topic => {
+                const data = catData[topic];
+                const button = document.createElement('button');
+                button.className = `tab-button w-full flex items-center p-3 rounded-xl text-lg font-medium text-primary-dark transition duration-150 ease-in-out hover:bg-accent-blue hover:text-white focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-opacity-50`;
+                button.innerHTML = `${data.icon} <span class="ml-3">${topic}</span>`;
+                button.onclick = () => showContent(topic);
+                button.id = `tab-${topic}`;
+                tabsContainer.appendChild(button);
+            });
+
+            // Automatically show the first topic on load
+            if (Object.keys(catData).length > 0) {
+                showContent(Object.keys(catData)[0]);
+            }
+        }
+
+        /**
+         * Renders the content for the selected topic in the main content area.
+         * @param {string} topic - The key of the selected topic (e.g., 'Breeds').
+         */
+        function showContent(topic) {
+            const data = catData[topic];
+            const contentDisplay = document.getElementById('content-display');
+            const initialMessage = document.getElementById('initial-message');
+            const tabs = document.querySelectorAll('.tab-button');
+
+            // 1. Update Active Tab Styling
+            tabs.forEach(tab => {
+                tab.classList.remove('bg-accent-blue', 'text-white', 'shadow-lg');
+                tab.classList.add('bg-gray-50', 'text-primary-dark');
+            });
+
+            const activeTab = document.getElementById(`tab-${topic}`);
+            if (activeTab) {
+                activeTab.classList.remove('bg-gray-50', 'text-primary-dark');
+                activeTab.classList.add('bg-accent-blue', 'text-white', 'shadow-lg');
+            }
+
+            // 2. Hide initial message and show content display
+            initialMessage.classList.add('hidden');
+            contentDisplay.classList.remove('hidden');
+
+            // 3. Render Content
+            let htmlContent = `<h2 class="text-3xl md:text-4xl font-extrabold text-primary-dark mb-6 border-b-4 border-accent-blue pb-2">${data.icon} ${data.title}</h2>`;
+
+            if (data.type === 'card-list') {
+                // Renders the Breeds section as a responsive grid of cards
+                htmlContent += `<div class="grid grid-cols-1 md:grid-cols-3 gap-6">`;
+                data.content.forEach(item => {
+                    htmlContent += `
+                        <div class="bg-gray-50 p-4 rounded-xl shadow-md hover:shadow-xl transition duration-300">
+                            <img src="${item.imageUrl}" alt="${item.name}" class="w-full h-40 object-cover rounded-lg mb-3 shadow-inner" onerror="this.onerror=null;this.src='https://placehold.co/400x300/a3a3a3/ffffff?text=Image+Not+Found';">
+                            <h3 class="text-xl font-bold text-accent-blue mb-1">${item.name}</h3>
+                            <p class="text-gray-600 text-sm">${item.description}</p>
+                        </div>
+                    `;
+                });
+                htmlContent += `</div>`;
+            } else if (data.type === 'text') {
+                // Renders History/Behavior as a main text block with an image
+                htmlContent += `
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="lg:w-2/3">
+                            <p class="text-gray-700 text-lg leading-relaxed">${data.content}</p>
+                        </div>
+                        <div class="lg:w-1/3 flex-shrink-0">
+                            <img src="${data.imageUrl}" alt="Cat Image" class="w-full h-auto object-cover rounded-xl shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/a3a3a3/ffffff?text=Image+Not+Found';">
+                        </div>
+                    </div>
+                `;
+            } else if (data.type === 'list') {
+                // Renders Facts as a simple list
+                htmlContent += `<ul class="space-y-4 text-lg text-gray-700 list-disc list-inside">`;
+                data.content.forEach(fact => {
+                    htmlContent += `<li class="p-3 bg-blue-50 rounded-lg shadow-sm">${fact}</li>`;
+                });
+                htmlContent += `</ul>`;
+            }
+
+            contentDisplay.innerHTML = htmlContent;
+            activeTopic = topic;
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTabs();
+        });
+    </script>
+
+</body>
+</html>

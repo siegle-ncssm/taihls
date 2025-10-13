@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Neural Network Learner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the neural network visualization */
+        .neuron-container {
+            position: relative;
+            height: 600px; /* Fixed height for visualization area */
+            width: 100%;
+            max-width: 1000px;
+            margin: auto;
+            border-radius: 1rem;
+        }
+
+        .neuron {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            position: absolute;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, border 0.1s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+        }
+
+        .neuron:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+            border: 2px solid #38bdf8; /* Sky blue border on hover */
+        }
+
+        .connection-line {
+            stroke: #4b5563; /* Gray line */
+            stroke-width: 1.5;
+            transition: stroke 0.15s ease, stroke-width 0.15s ease;
+            cursor: crosshair;
+        }
+
+        .connection-line:hover {
+            stroke: #8b5cf6; /* Violet line on hover */
+            stroke-width: 3;
+        }
+        
+        /* Utility for hit testing on lines */
+        .line-hit-area {
+            position: absolute;
+            z-index: 10; /* Above the SVG lines but below neurons */
+            cursor: crosshair;
+        }
+    </style>
+    <script>
+        // --- Configuration ---
+        const NETWORK_CONFIG = [
+            { name: "Input", count: 3, color: "bg-green-500", text: "text-white" },
+            { name: "Hidden 1", count: 5, color: "bg-blue-500", text: "text-white" },
+            { name: "Hidden 2", count: 4, color: "bg-blue-500", text: "text-white" },
+            { name: "Output", count: 2, color: "bg-red-500", text: "text-white" }
+        ];
+
+        const NEURON_RADIUS = 16;
+        const HORIZONTAL_GAP_FACTOR = 100;
+
+        // --- Data Structure for Neurons ---
+        let networkNodes = [];
+
+        // --- Explanations ---
+        const EXPLANATIONS = {
+            'Input Neuron': {
+                title: "Input Layer Neuron (Feature)",
+                description: "This is a single feature from your dataset (e.g., 'age' or 'pixel intensity'). These neurons receive the initial data and pass it to the first hidden layer."
+            },
+            'Hidden Neuron': {
+                title: "Hidden Layer Neuron (Computational Unit)",
+                description: "These are the 'thinkers' of the network. Each one performs a calculation: it sums the weighted inputs from the previous layer, adds a Bias value, and applies an Activation Function to the result."
+            },
+            'Output Neuron': {
+                title: "Output Layer Neuron (Prediction)",
+                description: "This neuron produces the final result of the network (e.g., a prediction like 'Yes'/'No', a classification score, or a continuous value)."
+            },
+            'Weight/Connection': {
+                title: "Weight (Connection Strength)",
+                description: "A Weight is a parameter that determines how much influence the output of one neuron has on the input of the next. It's the primary value adjusted during the network's training process (learning)."
+            },
+            'Bias': {
+                title: "Bias (Adjustable Threshold)",
+                description: "Although not explicitly shown as a node, every Hidden and Output neuron has a Bias. It's a constant value added to the weighted sum of inputs before the activation function. It allows the activation function to shift to the left or right, enabling the model to fit data better."
+            },
+            'Activation Function': {
+                title: "Activation Function (Non-linearity)",
+                description: "This is a non-linear function (like ReLU or Sigmoid) applied within each neuron to the weighted sum of inputs + bias. It introduces complexity, allowing the network to learn non-linear relationships in data."
+            },
+            'Default': {
+                title: "Neural Network Visualization",
+                description: "Welcome! This is a simplified, interactive model of a Feed-Forward Neural Network. Hover over any circle (Neuron) or line (Weight) to learn about that component."
+            }
+        };
+
+        // --- Core Functions ---
+
+        /**
+         * Converts explanation key to title and description.
+         * @param {string} key - The key for the explanation.
+         * @returns {{title: string, description: string}}
+         */
+        function getExplanation(key) {
+            return EXPLANATIONS[key] || EXPLANATIONS['Default'];
+        }
+
+        /**
+         * Updates the explanation panel on the right.
+         * @param {string} key - The key corresponding to the item hovered.
+         */
+        function updateDescriptionPanel(key) {
+            const { title, description } = getExplanation(key);
+            document.getElementById('description-title').textContent = title;
+            document.getElementById('description-text').textContent = description;
+
+            // Apply glow effect to the panel on interaction
+            const panel = document.getElementById('description-panel');
+            panel.classList.add('ring-4', 'ring-purple-500', 'ring-opacity-50');
+            
+            // Remove the glow after a short delay
+            clearTimeout(panel.glowTimeout);
+            panel.glowTimeout = setTimeout(() => {
+                panel.classList.remove('ring-4', 'ring-purple-500', 'ring-opacity-50');
+            }, 300);
+        }
+        
+        /**
+         * Resets the description panel to the default state.
+         */
+        function resetDescriptionPanel() {
+            updateDescriptionPanel('Default');
+        }
+
+        /**
+         * Renders the neural network neurons (circles) as DIVs.
+         */
+        function renderNetwork() {
+            const container = document.getElementById('network-container');
+            const totalWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            const numLayers = NETWORK_CONFIG.length;
+            
+            // Clear previous elements
+            container.innerHTML = `<svg id="connections-svg" class="absolute inset-0 z-0" width="100%" height="100%"></svg>`;
+            networkNodes = [];
+
+            NETWORK_CONFIG.forEach((layer, layerIndex) => {
+                const layerNodes = [];
+                const numNodes = layer.count;
+                
+                // Calculate X position for the current layer
+                const x = (layerIndex / (numLayers - 1)) * (totalWidth - 2 * HORIZONTAL_GAP_FACTOR) + HORIZONTAL_GAP_FACTOR;
+
+                // Calculate vertical spacing
+                const totalHeightNeeded = numNodes * (NEURON_RADIUS * 2 + 30); // 30 is margin
+                const verticalOffset = (containerHeight - totalHeightNeeded) / 2;
+                const spacing = (containerHeight - 2 * verticalOffset) / (numNodes > 1 ? numNodes - 1 : 1);
+
+                for (let i = 0; i < numNodes; i++) {
+                    // Calculate Y position for the current neuron
+                    const y = verticalOffset + i * spacing;
+
+                    const neuronEl = document.createElement('div');
+                    neuronEl.className = `neuron ${layer.color} ${layer.text} shadow-lg`;
+                    neuronEl.textContent = `${i + 1}`;
+                    neuronEl.style.left = `${x - NEURON_RADIUS}px`;
+                    neuronEl.style.top = `${y - NEURON_RADIUS}px`;
+                    
+                    // Determine the component type for explanation
+                    let componentType;
+                    if (layerIndex === 0) componentType = 'Input Neuron';
+                    else if (layerIndex === numLayers - 1) componentType = 'Output Neuron';
+                    else componentType = 'Hidden Neuron';
+                    
+                    neuronEl.dataset.component = componentType;
+                    
+                    // Add interactivity
+                    neuronEl.onmouseover = () => updateDescriptionPanel(componentType);
+                    neuronEl.onmouseout = resetDescriptionPanel;
+
+                    container.appendChild(neuronEl);
+                    layerNodes.push({ element: neuronEl, x: x, y: y, component: componentType });
+                }
+                networkNodes.push(layerNodes);
+            });
+
+            drawConnections(container);
+        }
+
+        /**
+         * Draws the lines (connections/weights) between all neurons.
+         * @param {HTMLElement} container - The main network container.
+         */
+        function drawConnections(container) {
+            const svg = document.getElementById('connections-svg');
+            const totalWidth = container.clientWidth;
+            const totalHeight = container.clientHeight;
+
+            svg.setAttribute('viewBox', `0 0 ${totalWidth} ${totalHeight}`);
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            
+            // Clear previous connections
+            svg.innerHTML = '';
+            
+            // Helper function to create a connection hover area
+            function createHitArea(x1, y1, x2, y2) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                const hitArea = document.createElement('div');
+                hitArea.className = 'line-hit-area';
+                hitArea.style.width = `${length}px`;
+                hitArea.style.height = '15px'; // Wide enough for easy hover
+                hitArea.style.left = `${x1}px`;
+                hitArea.style.top = `${y1 - 7.5}px`;
+                hitArea.style.transformOrigin = '0 0';
+                hitArea.style.transform = `rotate(${angle}deg)`;
+                // For debugging: hitArea.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+
+                hitArea.onmouseover = () => updateDescriptionPanel('Weight/Connection');
+                hitArea.onmouseout = resetDescriptionPanel;
+                container.appendChild(hitArea);
+            }
+
+
+            for (let i = 0; i < networkNodes.length - 1; i++) {
+                const currentLayer = networkNodes[i];
+                const nextLayer = networkNodes[i + 1];
+
+                currentLayer.forEach(nodeA => {
+                    nextLayer.forEach(nodeB => {
+                        // Draw SVG line
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', nodeA.x);
+                        line.setAttribute('y1', nodeA.y);
+                        line.setAttribute('x2', nodeB.x);
+                        line.setAttribute('y2', nodeB.y);
+                        line.classList.add('connection-line');
+                        svg.appendChild(line);
+
+                        // Create hover hit area (invisible DIV) for the line
+                        // Note: Using the line's midpoint for the DIV positioning is complex. 
+                        // A simpler approach is to rely on SVG's stroke-linecap: round and increased stroke on hover
+                        // However, to ensure easy hovering, creating a dedicated hit area is better.
+
+                        // For the hit area, we calculate the start point of the rotation to be the first neuron's center.
+                        createHitArea(nodeA.x, nodeA.y, nodeB.x, nodeB.y);
+                    });
+                });
+            }
+        }
+
+        // --- Event Listener for Responsiveness and Initial Load ---
+        window.addEventListener('resize', renderNetwork);
+        window.onload = () => {
+            renderNetwork();
+            resetDescriptionPanel(); // Set initial explanation
+        };
+    </script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-white mb-2">Interactive Neural Network</h1>
+            <p class="text-xl text-purple-400">Hover over components to learn their roles.</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            
+            <!-- Visualization Panel -->
+            <div class="lg:w-3/5 bg-gray-800 p-6 rounded-xl shadow-2xl relative">
+                <h2 class="text-2xl font-semibold mb-4 text-white">Network Architecture (3-5-4-2)</h2>
+                <div id="network-container" class="neuron-container border-2 border-gray-700">
+                    <!-- Network elements and SVG connections will be rendered here by JavaScript -->
+                </div>
+                <p class="text-sm text-gray-400 mt-4 text-center">Drag the window to see how the visualization adapts!</p>
+            </div>
+
+            <!-- Description Panel -->
+            <div id="description-panel" class="lg:w-2/5 bg-gray-800 p-6 rounded-xl shadow-2xl h-fit sticky top-8 transition-all duration-300">
+                <div class="p-4 bg-gray-700 rounded-lg mb-4">
+                    <h3 id="description-title" class="text-3xl font-bold text-sky-400 mb-2"></h3>
+                </div>
+                
+                <p id="description-text" class="text-lg leading-relaxed text-gray-300"></p>
+                
+                <div class="mt-8 pt-4 border-t border-gray-700 space-y-3">
+                    <h4 class="text-xl font-semibold text-white">Conceptual Components Explained:</h4>
+                    
+                    <div class="flex items-center space-x-3">
+                        <span class="w-4 h-4 rounded-full bg-yellow-400 flex-shrink-0"></span>
+                        <p class="text-gray-300 cursor-pointer" onmouseover="updateDescriptionPanel('Bias')" onmouseout="resetDescriptionPanel">
+                            **Bias** (Click/Hover for detail)
+                        </p>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg text-purple-400 flex-shrink-0">ƒ(x)</span>
+                        <p class="text-gray-300 cursor-pointer" onmouseover="updateDescriptionPanel('Activation Function')" onmouseout="resetDescriptionPanel">
+                            **Activation Function** (Click/Hover for detail)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

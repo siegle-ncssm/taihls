@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock, Paper, Scissors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .choice-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .choice-card.selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.7); /* blue-500 glow */
+        }
+        .btn-choice {
+             transition: all 0.2s ease-in-out;
+        }
+        .btn-choice:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-3xl mx-auto p-4 md:p-8 text-center">
+        <!-- Title -->
+        <h1 class="text-4xl md:text-6xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Rock, Paper, Scissors</h1>
+        <p class="text-gray-400 mb-8 md:mb-12">Choose your weapon!</p>
+
+        <!-- Player Choices -->
+        <div id="player-choices" class="flex justify-center items-center gap-4 md:gap-8 mb-8">
+            <button data-choice="Rock" class="btn-choice bg-gray-800 p-4 md:p-6 rounded-2xl border-2 border-transparent hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <span class="text-5xl md:text-7xl">✊</span>
+                <span class="block mt-2 text-lg font-semibold">Rock</span>
+            </button>
+            <button data-choice="Paper" class="btn-choice bg-gray-800 p-4 md:p-6 rounded-2xl border-2 border-transparent hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <span class="text-5xl md:text-7xl">✋</span>
+                <span class="block mt-2 text-lg font-semibold">Paper</span>
+            </button>
+            <button data-choice="Scissors" class="btn-choice bg-gray-800 p-4 md:p-6 rounded-2xl border-2 border-transparent hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <span class="text-5xl md:text-7xl">✌️</span>
+                <span class="block mt-2 text-lg font-semibold">Scissors</span>
+            </button>
+        </div>
+
+        <!-- Results Display -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 items-center justify-items-center mb-8 h-48 md:h-auto">
+            <!-- Player's Choice Display -->
+            <div class="w-full">
+                <h2 class="text-xl font-semibold mb-2 text-blue-400">You Chose</h2>
+                <div id="player-choice-display" class="choice-card bg-gray-800 w-full h-32 md:h-48 rounded-2xl flex items-center justify-center">
+                    <span id="player-choice-emoji" class="text-5xl md:text-7xl"></span>
+                </div>
+            </div>
+
+             <!-- VS / Result Text -->
+            <div class="w-full md:order-first md:col-span-1 md:order-none">
+                 <div id="result-text-container" class="h-24 flex items-center justify-center">
+                      <p id="result-text" class="text-2xl md:text-3xl font-bold h-16"></p>
+                 </div>
+            </div>
+
+            <!-- Computer's Choice Display -->
+            <div class="w-full">
+                <h2 class="text-xl font-semibold mb-2 text-purple-400">Computer Chose</h2>
+                <div id="computer-choice-display" class="choice-card bg-gray-800 w-full h-32 md:h-48 rounded-2xl flex items-center justify-center">
+                    <span id="computer-choice-emoji" class="text-5xl md:text-7xl"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scoreboard and Reset Button -->
+        <div class="bg-gray-800/50 rounded-2xl p-4 flex items-center justify-between max-w-sm mx-auto">
+             <div class="text-center">
+                <p class="text-lg font-medium text-blue-400">Player</p>
+                <p id="player-score" class="text-4xl font-bold">0</p>
+            </div>
+            <button id="reset-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200">Reset</button>
+            <div class="text-center">
+                <p class="text-lg font-medium text-purple-400">Computer</p>
+                <p id="computer-score" class="text-4xl font-bold">0</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const choices = ['Rock', 'Paper', 'Scissors'];
+        const emojis = {
+            'Rock': '✊',
+            'Paper': '✋',
+            'Scissors': '✌️'
+        };
+
+        const choiceButtons = document.querySelectorAll('.btn-choice');
+        const playerScoreEl = document.getElementById('player-score');
+        const computerScoreEl = document.getElementById('computer-score');
+        const playerChoiceEmojiEl = document.getElementById('player-choice-emoji');
+        const computerChoiceEmojiEl = document.getElementById('computer-choice-emoji');
+        const playerChoiceDisplay = document.getElementById('player-choice-display');
+        const computerChoiceDisplay = document.getElementById('computer-choice-display');
+        const resultTextEl = document.getElementById('result-text');
+        const resetBtn = document.getElementById('reset-btn');
+
+        let playerScore = 0;
+        let computerScore = 0;
+
+        // Function to get computer's choice
+        function getComputerChoice() {
+            const randomIndex = Math.floor(Math.random() * choices.length);
+            return choices[randomIndex];
+        }
+
+        // Function to determine the winner
+        function determineWinner(player, computer) {
+            if (player === computer) {
+                return 'tie';
+            }
+            if (
+                (player === 'Rock' && computer === 'Scissors') ||
+                (player === 'Paper' && computer === 'Rock') ||
+                (player === 'Scissors' && computer === 'Paper')
+            ) {
+                return 'win';
+            }
+            return 'lose';
+        }
+        
+        // Function to update the UI
+        function updateUI(playerChoice, computerChoice, result) {
+            // Update choices
+            playerChoiceEmojiEl.textContent = emojis[playerChoice];
+            computerChoiceEmojiEl.textContent = emojis[computerChoice];
+
+            // Reset selection styles
+            playerChoiceDisplay.classList.remove('selected', 'border-green-500', 'border-red-500', 'border-gray-500');
+            computerChoiceDisplay.classList.remove('selected', 'border-green-500', 'border-red-500', 'border-gray-500');
+            playerChoiceDisplay.style.borderColor = 'transparent';
+            computerChoiceDisplay.style.borderColor = 'transparent';
+
+
+            // Update result text and score
+            if (result === 'win') {
+                playerScore++;
+                resultTextEl.textContent = 'You Win!';
+                resultTextEl.className = 'text-2xl md:text-3xl font-bold text-green-400';
+                playerChoiceDisplay.style.borderColor = 'rgb(34 197 94)'; // green-500
+                computerChoiceDisplay.style.borderColor = 'rgb(239 68 68)'; // red-500
+            } else if (result === 'lose') {
+                computerScore++;
+                resultTextEl.textContent = 'You Lose!';
+                 resultTextEl.className = 'text-2xl md:text-3xl font-bold text-red-500';
+                playerChoiceDisplay.style.borderColor = 'rgb(239 68 68)'; // red-500
+                computerChoiceDisplay.style.borderColor = 'rgb(34 197 94)'; // green-500
+            } else {
+                resultTextEl.textContent = "It's a Tie!";
+                 resultTextEl.className = 'text-2xl md:text-3xl font-bold text-gray-400';
+                playerChoiceDisplay.style.borderColor = 'rgb(107 114 128)'; // gray-500
+                computerChoiceDisplay.style.borderColor = 'rgb(107 114 128)'; // gray-500
+            }
+
+            // Update scores
+            playerScoreEl.textContent = playerScore;
+            computerScoreEl.textContent = computerScore;
+
+             // Add a little animation
+            playerChoiceDisplay.classList.add('selected');
+            computerChoiceDisplay.classList.add('selected');
+
+            setTimeout(() => {
+                playerChoiceDisplay.classList.remove('selected');
+                computerChoiceDisplay.classList.remove('selected');
+            }, 500);
+        }
+        
+        // Function to handle player's choice
+        function selectChoice(e) {
+            const playerChoice = e.currentTarget.dataset.choice;
+            const computerChoice = getComputerChoice();
+            const result = determineWinner(playerChoice, computerChoice);
+            updateUI(playerChoice, computerChoice, result);
+        }
+        
+        // Reset game function
+        function resetGame() {
+            playerScore = 0;
+            computerScore = 0;
+            playerScoreEl.textContent = '0';
+            computerScoreEl.textContent = '0';
+            playerChoiceEmojiEl.textContent = '';
+            computerChoiceEmojiEl.textContent = '';
+            resultTextEl.textContent = '';
+            resultTextEl.className = 'text-2xl md:text-3xl font-bold h-16';
+            playerChoiceDisplay.style.borderColor = 'transparent';
+            computerChoiceDisplay.style.borderColor = 'transparent';
+        }
+
+
+        // Event Listeners
+        choiceButtons.forEach(button => button.addEventListener('click', selectChoice));
+        resetBtn.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>

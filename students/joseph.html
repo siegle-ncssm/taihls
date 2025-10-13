@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network Parameter Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .layer-card {
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .layer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Neural Network Parameter Calculator</h1>
+            <p class="text-lg text-gray-600 mt-2">Build your network architecture layer by layer to find the total trainable parameters.</p>
+        </header>
+
+        <main>
+            <!-- Input Layer -->
+            <div class="bg-white rounded-lg p-6 mb-6 layer-card">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Input Layer</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div>
+                        <label for="input-dim" class="block text-sm font-medium text-gray-700 mb-1">Input Dimensions (Features)</label>
+                        <input type="number" id="input-dim" value="784" min="1" class="w-full bg-gray-100 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                    </div>
+                    <div class="mt-4 md:mt-0 md:pt-6 text-sm text-gray-500">
+                        This is the number of features in your input data (e.g., for a 28x28 image, this would be 784).
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden Layers -->
+            <div id="layers-container" class="space-y-6">
+                <!-- Layers will be dynamically inserted here -->
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button id="add-layer-btn" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-md">
+                    Add Hidden Layer
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="results-card" class="bg-white rounded-lg p-6 mt-8 layer-card hidden">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Calculation Results</h2>
+                <div class="space-y-4">
+                    <div id="layer-breakdown" class="text-gray-700">
+                        <!-- Breakdown will be inserted here -->
+                    </div>
+                    <div class="border-t pt-4 mt-4">
+                        <p class="text-lg font-semibold text-gray-900">Total Trainable Parameters: <span id="total-params" class="text-indigo-600">0</span></p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const layersContainer = document.getElementById('layers-container');
+            const addLayerBtn = document.getElementById('add-layer-btn');
+            const resultsCard = document.getElementById('results-card');
+            const layerBreakdown = document.getElementById('layer-breakdown');
+            const totalParamsEl = document.getElementById('total-params');
+            const inputDimEl = document.getElementById('input-dim');
+
+            let layers = [];
+            let layerCounter = 0;
+
+            // Add initial two hidden layers for demonstration
+            addLayer(128);
+            addLayer(64);
+            calculateParams();
+
+            addLayerBtn.addEventListener('click', () => {
+                const lastLayerNeurons = layers.length > 0 ? layers[layers.length - 1].neurons : 10;
+                addLayer(lastLayerNeurons);
+            });
+
+            inputDimEl.addEventListener('input', calculateParams);
+
+            function addLayer(neurons) {
+                layerCounter++;
+                const layerId = `layer-${layerCounter}`;
+                const neuronsId = `neurons-${layerCounter}`;
+
+                const layerHTML = `
+                    <div id="${layerId}" class="bg-white rounded-lg p-6 layer-card relative">
+                        <button class="remove-layer-btn absolute top-3 right-4 text-gray-400 hover:text-red-500 transition-colors" data-layer-id="${layerId}">&times;</button>
+                        <h3 class="text-lg font-semibold mb-4 text-gray-700">Hidden Layer ${layerCounter} (Dense)</h3>
+                        <div>
+                            <label for="${neuronsId}" class="block text-sm font-medium text-gray-700 mb-1">Number of Neurons</label>
+                            <input type="number" id="${neuronsId}" value="${neurons}" min="1" class="layer-neurons w-full bg-gray-100 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                        </div>
+                    </div>
+                `;
+
+                layersContainer.insertAdjacentHTML('beforeend', layerHTML);
+
+                const newLayer = {
+                    id: layerId,
+                    neuronsEl: document.getElementById(neuronsId),
+                    get neurons() { return parseInt(this.neuronsEl.value, 10) || 0; }
+                };
+
+                layers.push(newLayer);
+
+                // Add event listeners for the new elements
+                newLayer.neuronsEl.addEventListener('input', calculateParams);
+                document.querySelector(`[data-layer-id="${layerId}"]`).addEventListener('click', removeLayer);
+                
+                calculateParams();
+            }
+
+            function removeLayer(event) {
+                const layerId = event.target.dataset.layerId;
+                const layerElement = document.getElementById(layerId);
+                
+                if (layerElement) {
+                    layerElement.remove();
+                }
+
+                layers = layers.filter(l => l.id !== layerId);
+                calculateParams();
+            }
+
+            function calculateParams() {
+                let totalParams = 0;
+                let breakdownHTML = '';
+                let prevLayerSize = parseInt(inputDimEl.value, 10) || 0;
+
+                if (layers.length === 0) {
+                    resultsCard.classList.add('hidden');
+                    return;
+                }
+
+                resultsCard.classList.remove('hidden');
+
+                layers.forEach((layer, index) => {
+                    const currentLayerSize = layer.neurons;
+                    const weights = prevLayerSize * currentLayerSize;
+                    const biases = currentLayerSize; // One bias per neuron
+                    const layerParams = weights + biases;
+                    totalParams += layerParams;
+
+                    breakdownHTML += `
+                        <p>
+                            <span class="font-semibold">Layer ${index + 1}:</span>
+                            (${prevLayerSize} &times; ${currentLayerSize}) + ${currentLayerSize} = 
+                            <span class="font-medium text-indigo-500">${layerParams.toLocaleString()}</span> parameters
+                        </p>
+                    `;
+
+                    prevLayerSize = currentLayerSize;
+                });
+
+                layerBreakdown.innerHTML = breakdownHTML;
+                totalParamsEl.textContent = totalParams.toLocaleString();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Matrix Simulator</title>
+<!-- Load Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import
+url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=
+swap');
+body {
+font-family: 'Inter', sans-serif;
+background-color: #0d0d1e; /* Deep space blue/black */
+color: #d1d5db;
+}
+canvas {
+display: block;
+background-color: #000000;
+border-radius: 0.75rem; /* rounded-xl */
+box-shadow: 0 0 40px rgba(59, 130, 246, 0.4); /* Blue glow */
+}
+</style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+<div class="w-full max-w-5xl">
+<h1 class="text-3xl font-extrabold text-center text-blue-400 mt-6
+mb-2">Neural Matrix Simulator</h1>
+<p class="text-center text-gray-400 mb-6">
+Click anywhere on the grid to **fire a neuron** and watch the
+digital signal propagate through the network!
+</p>
+<!-- Canvas Container -->
+<div class="flex justify-center mb-8">
+<canvas id="neural-canvas"></canvas>
+</div>
+<!-- Controls and Info -->
+<div class="bg-gray-800 p-4 rounded-xl shadow-lg border
+border-gray-700 max-w-lg mx-auto">
+<h2 class="text-xl font-semibold text-gray-200 mb-3">How it
+Works</h2>
+<ul class="list-disc list-inside text-sm text-gray-400
+space-y-1">
+<li><strong class="text-blue-300">Nodes:</strong> The
+circles are **neurons** (digital processing units).</li>
+<li><strong class="text-green-300">Activation:</strong>
+When a neuron receives energy (signal), its color brightens.</li>
+<li><strong class="text-red-300">Firing:</strong> If a
+neuron reaches a **threshold**, it flashes bright red/orange and sends
+energy to its neighbors.</li>
+<li><strong class="text-yellow-300">Interactive:</strong>
+Clicking injects a powerful starting signal.</li>
+</ul>
+</div>
+</div>
+<script>
+// --- Setup and Constants ---
+const canvas = document.getElementById('neural-canvas');
+const ctx = canvas.getContext('2d');
+// Define the grid size and neuron properties
+const GRID_SIZE = 25; // Number of neurons across and down
+const NEURON_RADIUS = 3;
+const ACTIVATION_THRESHOLD = 1.0;
+const ACTIVATION_DECAY = 0.02;
+const ACTIVATION_PROPAGATION = 0.4; // How much activation is
+passed on
+const FIRING_BRIGHTNESS = 255;
+let nodes = [];
+let canvasWidth, canvasHeight, spacing;
+let isAnimating = false;
+// --- Node Class (Represents a single digital neuron) ---
+class Node {
+constructor(gridX, gridY, x, y) {
+this.gridX = gridX;
+this.gridY = gridY;
+this.x = x;
+this.y = y;
+this.activation = 0.0; // 0.0 (Dormant) to 1.0 (Ready to
+Fire)
+this.firingTimer = 0; // Countdown for the bright flash
+}
+// Increases activation and checks if the neuron should fire
+receiveSignal(amount) {
+this.activation += amount;
+if (this.activation >= ACTIVATION_THRESHOLD) {
+this.fire();
+}
+// Cap activation at the threshold visually
+this.activation = Math.min(this.activation,
+ACTIVATION_THRESHOLD + 0.5);
+}
+// Triggers the firing state and propagates the signal to
+neighbors
+fire() {
+this.activation = 0; // Reset activation after firing
+this.firingTimer = 10; // Start the flash timer
+// Get immediate neighbors and send them a reduced signal
+const neighbors = getNeighbors(this.gridX, this.gridY);
+neighbors.forEach(neighbor => {
+neighbor.receiveSignal(ACTIVATION_PROPAGATION);
+});
+}
+// Updates the node's state (decay and flash timer)
+update() {
+// Gradual decay of activation
+if (this.activation > 0) {
+this.activation -= ACTIVATION_DECAY;
+this.activation = Math.max(0, this.activation);
+}
+// Decrease firing flash timer
+if (this.firingTimer > 0) {
+this.firingTimer--;
+}
+}
+// Draws the node based on its current state
+draw() {
+let color;
+let radius = NEURON_RADIUS;
+if (this.firingTimer > 0) {
+// Neuron is firing (bright flash)
+const intensity = Math.round(this.firingTimer *
+(FIRING_BRIGHTNESS / 10)); // Fade out the brightness
+color = `rgb(${FIRING_BRIGHTNESS}, ${intensity},
+${intensity})`;
+radius = NEURON_RADIUS + 2; // Make it bigger when
+firing
+} else if (this.activation > 0) {
+// Neuron is activated (glowing blue)
+const intensity = Math.round(this.activation * 150);
+color = `rgb(${intensity}, ${intensity}, 255)`; // Blue
+glow
+} else {
+// Dormant neuron (dim background color)
+color = '#1f2937';
+}
+ctx.fillStyle = color;
+ctx.beginPath();
+ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+ctx.fill();
+}
+}
+// --- Grid and Neighbor Logic ---
+/**
+* Initializes the canvas size and the grid of nodes.
+*/
+function initializeGrid() {
+// Set canvas size based on container (responsive)
+canvasWidth = canvas.clientWidth;
+canvasHeight = canvas.clientHeight;
+canvas.width = canvasWidth;
+canvas.height = canvasHeight;
+// Calculate spacing based on the smallest dimension
+const size = Math.min(canvasWidth, canvasHeight);
+spacing = size / (GRID_SIZE + 1);
+nodes = []; // Clear old nodes
+// Create the grid of nodes
+for (let i = 0; i < GRID_SIZE; i++) {
+nodes[i] = [];
+for (let j = 0; j < GRID_SIZE; j++) {
+const x = (i + 1) * spacing + (canvasWidth - size) / 2;
+// Center the grid
+const y = (j + 1) * spacing + (canvasHeight - size) /
+2;
+nodes[i][j] = new Node(i, j, x, y);
+}
+}
+if (!isAnimating) {
+animate(); // Start the loop if not already running
+isAnimating = true;
+}
+}
+/**
+* Finds the 8 immediate neighbors of a neuron (including
+diagonals).
+* @param {number} x - Grid X index.
+* @param {number} y - Grid Y index.
+* @returns {Node[]} Array of neighboring Node objects.
+*/
+function getNeighbors(x, y) {
+const neighbors = [];
+for (let dx = -1; dx <= 1; dx++) {
+for (let dy = -1; dy <= 1; dy++) {
+if (dx === 0 && dy === 0) continue; // Skip self
+const nx = x + dx;
+const ny = y + dy;
+// Check bounds
+if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny <
+GRID_SIZE) {
+neighbors.push(nodes[nx][ny]);
+}
+}
+}
+return neighbors;
+}
+// --- Drawing and Animation Loop ---
+/**
+* Draws the connections (synapses) between active nodes.
+*/
+function drawConnections() {
+ctx.strokeStyle = 'rgba(59, 130, 246, 0.1)'; // Faint blue
+lines
+ctx.lineWidth = 0.5;
+// Simple loop to draw horizontal and vertical connections
+for (let i = 0; i < GRID_SIZE; i++) {
+for (let j = 0; j < GRID_SIZE; j++) {
+const node = nodes[i][j];
+// Draw connection to the right
+if (i < GRID_SIZE - 1) {
+const neighbor = nodes[i + 1][j];
+// If either node is activated, brighten the line
+const opacity = Math.max(node.activation,
+neighbor.activation) * 0.5;
+ctx.strokeStyle = `rgba(59, 130, 246, ${0.1 +
+opacity})`;
+ctx.beginPath();
+ctx.moveTo(node.x, node.y);
+ctx.lineTo(neighbor.x, neighbor.y);
+ctx.stroke();
+}
+// Draw connection downwards
+if (j < GRID_SIZE - 1) {
+const neighbor = nodes[i][j + 1];
+// If either node is activated, brighten the line
+const opacity = Math.max(node.activation,
+neighbor.activation) * 0.5;
+ctx.strokeStyle = `rgba(59, 130, 246, ${0.1 +
+opacity})`;
+ctx.beginPath();
+ctx.moveTo(node.x, node.y);
+ctx.lineTo(neighbor.x, neighbor.y);
+ctx.stroke();
+}
+}
+}
+}
+/**
+* The main animation loop.
+*/
+function animate() {
+requestAnimationFrame(animate);
+// 1. Clear the canvas with a slight fade effect (for trails)
+ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+// 2. Draw connections (must be done before nodes so nodes
+appear on top)
+drawConnections();
+// 3. Update and Draw all nodes
+for (let i = 0; i < GRID_SIZE; i++) {
+for (let j = 0; j < GRID_SIZE; j++) {
+const node = nodes[i][j];
+node.update();
+node.draw();
+}
+}
+}
+// --- Interaction ---
+/**
+* Handles user clicks to manually fire a neuron.
+* @param {Event} e - Mouse click event.
+*/
+function handleCanvasClick(e) {
+if (!nodes.length) return;
+// Get click coordinates relative to the canvas
+const rect = canvas.getBoundingClientRect();
+const mouseX = e.clientX - rect.left;
+const mouseY = e.clientY - rect.top;
+let closestNode = null;
+let minDistanceSq = Infinity;
+// Find the closest neuron to the click point
+for (let i = 0; i < GRID_SIZE; i++) {
+for (let j = 0; j < GRID_SIZE; j++) {
+const node = nodes[i][j];
+const dx = node.x - mouseX;
+const dy = node.y - mouseY;
+const distanceSq = dx * dx + dy * dy;
+if (distanceSq < minDistanceSq) {
+minDistanceSq = distanceSq;
+closestNode = node;
+}
+}
+}
+// If a node is close enough, force it to fire
+if (closestNode && minDistanceSq < spacing * spacing) {
+closestNode.receiveSignal(ACTIVATION_THRESHOLD * 2); //
+Force-fire it
+}
+}
+// --- Initial Setup and Listeners ---
+// Set up canvas dimensions for initial load
+function setupCanvasDimensions() {
+const container =
+document.querySelector('.flex.justify-center');
+const size = Math.min(window.innerWidth - 60, 600); // Max size
+600px
+canvas.style.width = size + 'px';
+canvas.style.height = size + 'px';
+initializeGrid();
+}
+window.addEventListener('resize', setupCanvasDimensions);
+canvas.addEventListener('click', handleCanvasClick);
+// Initial call to set up and start the animation
+window.onload = setupCanvasDimensions;
+</script>
+</body>
+</html>

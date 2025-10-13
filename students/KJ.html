@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symbolic Integration Calculator</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Nerdamer for symbolic math -->
+    <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/nerdamer.core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Calculus.min.js"></script>
+    <!-- Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 transform transition-all hover:scale-105">
+        
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <svg class="w-16 h-16 mx-auto text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 14h.01M9 11h.01M12 11h.01M15 11h.01M12 4a1 1 0 011 1v1a1 1 0 01-2 0V5a1 1 0 011-1zM4.22 8.22l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 011.414-1.414zm15.56 0a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707zM12 20a1 1 0 01-1-1v-1a1 1 0 112 0v1a1 1 0 01-1 1zM4.22 15.78l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414-1.414zm15.56 0a1 1 0 011.414-1.414l-.707.707a1 1 0 01-1.414 1.414l.707-.707z"></path></svg>
+            <h1 class="text-3xl font-bold text-gray-800 mt-4">Integration Calculator</h1>
+            <p class="text-gray-500 mt-2">Find the indefinite integral of a function.</p>
+        </div>
+
+        <!-- Input Form -->
+        <form id="integration-form">
+            <div class="space-y-6">
+                <!-- Expression Input -->
+                <div>
+                    <label for="expression" class="block text-sm font-medium text-gray-700">Function to integrate</label>
+                    <div class="mt-1 relative rounded-md shadow-sm flex items-center">
+                        <span class="inline-flex items-center px-3 text-gray-500 text-lg">∫</span>
+                        <input type="text" name="expression" id="expression" class="flex-1 block w-full rounded-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 p-3" placeholder="e.g., x^2 + sin(x)">
+                        <span class="inline-flex items-center px-3 text-gray-500 text-lg" id="differential">dx</span>
+                    </div>
+                </div>
+
+                <!-- Variable Input -->
+                <div>
+                    <label for="variable" class="block text-sm font-medium text-gray-700">With respect to</label>
+                    <div class="mt-1">
+                        <input type="text" name="variable" id="variable" value="x" class="block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-3 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., x">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="mt-8">
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    Integrate
+                </button>
+            </div>
+        </form>
+
+        <!-- Result Display -->
+        <div id="result-container" class="mt-8 hidden">
+            <h2 class="text-lg font-semibold text-gray-800">Result:</h2>
+            <div class="mt-2 p-4 bg-gray-50 rounded-md overflow-x-auto">
+                <code id="result" class="text-lg text-gray-900 font-mono"></code>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error-container" class="mt-6 hidden">
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
+                <p class="font-bold">Error</p>
+                <p id="error-message"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM element references
+        const form = document.getElementById('integration-form');
+        const expressionInput = document.getElementById('expression');
+        const variableInput = document.getElementById('variable');
+        const differentialEl = document.getElementById('differential');
+        const resultContainer = document.getElementById('result-container');
+        const resultEl = document.getElementById('result');
+        const errorContainer = document.getElementById('error-container');
+        const errorMessageEl = document.getElementById('error-message');
+
+        // Update the 'd' variable in the UI
+        variableInput.addEventListener('input', () => {
+            const variable = variableInput.value.trim() || 'x';
+            differentialEl.textContent = `d${variable}`;
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevent page reload
+
+            // Hide previous results and errors
+            resultContainer.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+
+            const expression = expressionInput.value.trim();
+            const variable = variableInput.value.trim();
+
+            // --- Input Validation ---
+            if (!expression) {
+                showError("Please enter a function to integrate.");
+                return;
+            }
+            if (!variable) {
+                showError("Please enter the variable of integration.");
+                return;
+            }
+             if (!/^[a-zA-Z]$/.test(variable)) {
+                showError("The integration variable must be a single letter.");
+                return;
+            }
+
+
+            // --- Perform Integration ---
+            try {
+                // Use nerdamer to calculate the integral
+                const integral = nerdamer.integrate(expression, variable);
+                
+                // Format and display the result
+                const resultString = integral.toString();
+                resultEl.textContent = `${resultString} + C`;
+                resultContainer.classList.remove('hidden');
+
+            } catch (error) {
+                // Display any parsing or calculation errors
+                console.error("Integration Error:", error);
+                showError("Could not calculate the integral. Please check the expression syntax.");
+            }
+        });
+
+        // --- Helper function to show errors ---
+        function showError(message) {
+            errorMessageEl.textContent = message;
+            errorContainer.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
