@@ -15,6 +15,8 @@
             --border-color: #e2e8f0;
             --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
             --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+            --border-radius: 12px;
+            --card-transform: translateY(-5px);
         }
 
         [data-theme="dark"] {
@@ -27,6 +29,22 @@
             --border-color: #4a5568;
             --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
             --shadow-lg: 0 10px 30px rgba(0,0,0,0.4);
+            --border-radius: 12px;
+            --card-transform: translateY(-5px);
+        }
+
+        [data-theme="edgy"] {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #00ff41;
+            --text-secondary: #00d936;
+            --accent-primary: #ff0066;
+            --accent-secondary: #ff3385;
+            --border-color: #00ff41;
+            --shadow-sm: 0 0 15px rgba(255, 0, 102, 0.3);
+            --shadow-lg: 0 0 30px rgba(255, 0, 102, 0.6);
+            --border-radius: 0;
+            --card-transform: translateY(-8px) rotate(-1deg);
         }
 
         * {
@@ -44,6 +62,11 @@
             transition: background 0.3s ease, color 0.3s ease;
         }
 
+        [data-theme="edgy"] body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(45deg, #0a0a0a 0%, #1a0a1a 100%);
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -56,13 +79,18 @@
             position: relative;
         }
 
-        .theme-toggle {
+        .theme-controls {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-toggle {
             background: var(--bg-secondary);
             border: 2px solid var(--border-color);
-            border-radius: 50px;
+            border-radius: var(--border-radius);
             padding: 8px 16px;
             cursor: pointer;
             font-size: 1.2em;
@@ -70,9 +98,20 @@
             box-shadow: var(--shadow-sm);
         }
 
+        [data-theme="edgy"] .theme-toggle {
+            border-radius: 0;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
         .theme-toggle:hover {
             transform: scale(1.05);
             box-shadow: var(--shadow-lg);
+        }
+
+        [data-theme="edgy"] .theme-toggle:hover {
+            transform: scale(1.05) skew(-2deg);
         }
 
         h1 {
@@ -80,11 +119,24 @@
             margin-bottom: 10px;
             color: var(--text-primary);
             font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="edgy"] h1 {
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px var(--accent-primary);
         }
 
         .subtitle {
             font-size: 1.2em;
             color: var(--text-secondary);
+        }
+
+        [data-theme="edgy"] .subtitle {
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .gallery {
@@ -97,17 +149,34 @@
         .project-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: var(--border-radius);
             padding: 25px;
             box-shadow: var(--shadow-sm);
             transition: all 0.3s ease;
             text-decoration: none;
             color: inherit;
             display: block;
+            position: relative;
+        }
+
+        [data-theme="edgy"] .project-card {
+            border-width: 2px;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
+        }
+
+        [data-theme="edgy"] .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 0%, rgba(255, 0, 102, 0.05) 100%);
+            pointer-events: none;
         }
 
         .project-card:hover {
-            transform: translateY(-5px);
+            transform: var(--card-transform);
             box-shadow: var(--shadow-lg);
             border-color: var(--accent-primary);
         }
@@ -117,6 +186,13 @@
             font-weight: 600;
             color: var(--accent-primary);
             margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="edgy"] .student-name {
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .project-title {
@@ -130,29 +206,55 @@
             background: var(--accent-primary);
             color: white;
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: var(--border-radius);
             text-decoration: none;
             font-weight: 500;
             transition: background 0.3s ease;
+        }
+
+        [data-theme="edgy"] .view-project {
+            border-radius: 0;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border: 2px solid var(--accent-primary);
+            background: transparent;
+            color: var(--accent-primary);
         }
 
         .view-project:hover {
             background: var(--accent-secondary);
         }
 
+        [data-theme="edgy"] .view-project:hover {
+            background: var(--accent-primary);
+            color: #0a0a0a;
+            box-shadow: 0 0 20px var(--accent-primary);
+        }
+
         .instructions {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: var(--border-radius);
             padding: 30px;
             margin-top: 40px;
             box-shadow: var(--shadow-sm);
+        }
+
+        [data-theme="edgy"] .instructions {
+            border-width: 2px;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
         }
 
         .instructions h2 {
             color: var(--accent-primary);
             margin-bottom: 15px;
             font-weight: 600;
+        }
+
+        [data-theme="edgy"] .instructions h2 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .instructions p {
@@ -167,16 +269,26 @@
             margin-top: 40px;
             padding: 20px;
         }
+
+        [data-theme="edgy"] .footer {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
-                <span id="theme-icon">🌙</span>
-            </button>
+            <div class="theme-controls">
+                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Light/Dark Mode">
+                    <span id="theme-icon">🌙</span>
+                </button>
+                <button class="theme-toggle" onclick="toggleEdgy()" aria-label="Toggle edgy mode" title="Edgy Mode">
+                    <span id="edgy-icon">⚡</span>
+                </button>
+            </div>
             <h1>🎨 Student Project Gallery</h1>
-            <p class="subtitle">Showcasing creative web projects</p>
+            <p class="subtitle">First draft web projects</p>
         </header>
 
         <div class="gallery">
@@ -313,7 +425,7 @@
             <h2>📚 For Students: How to Submit Your Project</h2>
             <p><strong>Step 1:</strong> Save your AI-generated HTML file as "index.html"</p>
             <p><strong>Step 2:</strong> If you have images or CSS files, keep them in the same folder</p>
-            <p><strong>Step 3:</strong> Submit your complete project folder to your teacher</p>
+            <p><strong>Step 3:</strong> Submit your complete project folder </p>
             <p><strong>Step 4:</strong> Your project will appear in this gallery within 24 hours!</p>
         </div>
 
@@ -330,16 +442,42 @@
 
         function toggleTheme() {
             const theme = document.documentElement.getAttribute('data-theme');
-            const newTheme = theme === 'light' ? 'dark' : 'light';
             
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
+            // If in edgy mode, switch to light first
+            if (theme === 'edgy') {
+                setTheme('light');
+                return;
+            }
+            
+            const newTheme = theme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        function toggleEdgy() {
+            const theme = document.documentElement.getAttribute('data-theme');
+            const newTheme = theme === 'edgy' ? 'light' : 'edgy';
+            setTheme(newTheme);
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            updateThemeIcon(theme);
         }
 
         function updateThemeIcon(theme) {
             const icon = document.getElementById('theme-icon');
-            icon.textContent = theme === 'light' ? '🌙' : '☀️';
+            const edgyIcon = document.getElementById('edgy-icon');
+            
+            if (theme === 'light') {
+                icon.textContent = '🌙';
+            } else if (theme === 'dark') {
+                icon.textContent = '☀️';
+            } else {
+                icon.textContent = '🌙';
+            }
+            
+            edgyIcon.textContent = theme === 'edgy' ? '🔥' : '⚡';
         }
     </script>
 </body>
